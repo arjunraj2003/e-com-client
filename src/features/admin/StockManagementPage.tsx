@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '@/services/productService';
-import { Package, Search, Save, Loader2, AlertCircle } from 'lucide-react';
+import { Package, Search, Save, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -41,9 +42,14 @@ export default function StockManagementPage() {
   return (
     <div className="container py-8 max-w-6xl animate-fade-in mb-24">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-white tracking-tight">Stock Management</h1>
-          <p className="text-slate-400 text-sm mt-1">Monitor and update inventory across all products</p>
+        <div className="flex items-center gap-4">
+          <Link to="/admin" className="w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-display font-bold text-white tracking-tight">Stock Management</h1>
+            <p className="text-slate-400 text-sm mt-1">Monitor and update inventory across all products</p>
+          </div>
         </div>
 
         <div className="relative group">

@@ -37,8 +37,9 @@ export default function CartPage() {
 
   const items = data?.items || [];
   const subtotal = items.reduce((sum: number, item: any) => {
-    const price = Number(item.variant?.price || item.variant?.product?.basePrice || 0);
-    return sum + price * item.quantity;
+    const base = Number(item.variant?.product?.basePrice || 0);
+    const extra = Number(item.variant?.price || 0);
+    return sum + (base + extra) * item.quantity;
   }, 0);
   const shipping = subtotal > 499 ? 0 : 49;
   const tax = subtotal * 0.18;
@@ -71,7 +72,9 @@ export default function CartPage() {
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {items.map((item: any) => {
-            const price = Number(item.variant?.price || item.variant?.product?.basePrice || 0);
+            const base = Number(item.variant?.product?.basePrice || 0);
+            const extra = Number(item.variant?.price || 0);
+            const price = base + extra;
             const img = item.variant?.product?.images?.find((i: any) => i.isPrimary) || item.variant?.product?.images?.[0];
             return (
               <div key={item.id} className="glass p-4 rounded-xl flex gap-4">

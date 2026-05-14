@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { formatDate } from '@/utils/helpers';
@@ -22,7 +24,12 @@ export default function AdminUsersPage() {
 
   return (
     <div className="container py-10 animate-fade-in">
-      <h1 className="text-2xl font-display font-bold text-white mb-8">Manage Users ({total})</h1>
+      <div className="flex items-center gap-4 mb-8">
+        <Link to="/admin" className="w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+          <ArrowLeft size={20} />
+        </Link>
+        <h1 className="text-2xl font-display font-bold text-white">Manage Users ({total})</h1>
+      </div>
       <div className="glass rounded-xl overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
           <thead style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>

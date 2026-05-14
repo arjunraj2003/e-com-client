@@ -14,7 +14,7 @@ export default function ProductCard({ product }: Props) {
   const queryClient = useQueryClient();
   const primaryImage = product.images?.find((i) => i.isPrimary) || product.images?.[0];
   const defaultVariant = product.variants?.[0];
-  const price = Number(defaultVariant?.price || product.basePrice);
+  const price = Number(product.basePrice || 0) + Number(defaultVariant?.price || 0);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();

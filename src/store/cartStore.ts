@@ -42,7 +42,7 @@ export const useCartStore = create<CartState>()(
       setCart: (items) => {
         const totalItems = items.reduce((s, i) => s + i.quantity, 0);
         const totalPrice = items.reduce((s, i) => {
-          const price = Number(i.variant.price || i.variant.product.basePrice);
+          const price = Number(i.variant.product?.basePrice || 0) + Number(i.variant.price || 0);
           return s + price * i.quantity;
         }, 0);
         set({ items, totalItems, totalPrice });

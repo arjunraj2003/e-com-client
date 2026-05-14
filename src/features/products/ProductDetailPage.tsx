@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Star, ShoppingCart, Heart, Minus, Plus, X } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Minus, Plus, X, ArrowLeft } from 'lucide-react';
 import { productApi } from '@/services/productService';
 import { cartApi, wishlistApi } from '@/services';
 import { useCartStore } from '@/store/cartStore';
@@ -54,11 +54,13 @@ function ZoomableLightbox({ url, onClose }: { url: string; onClose: () => void }
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const sessionId = useCartStore((s) => s.sessionId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
   const [showLightbox, setShowLightbox] = useState(false);
@@ -76,9 +78,47 @@ export default function ProductDetailPage() {
     enabled: !!data?.data?.data?.id,
   });
 
-  if (isLoading) return <PageLoader />;
-
   const product = data?.data?.data;
+
+  // Check if ALL variants have the same set of attribute keys (consistent schema)
+  const variantMode = useMemo(() => {
+    const variants = product?.variants || [];
+    if (variants.length === 0) return 'none';
+    if (variants.length === 1) return 'single';
+    const keysets = variants.map((v: any) =>
+      JSON.stringify(Object.keys(v.attributes || {}).sort())
+    );
+    const allSame = keysets.every((k: string) => k === keysets[0]);
+    return allSame ? 'multi-attr' : 'direct';
+  }, [product]);
+
+  // Initialize selection to first variant
+  useEffect(() => {
+    const variants = product?.variants || [];
+    if (variants.length === 0) return;
+    if (variantMode === 'direct' || variantMode === 'single') {
+      if (!selectedVariantId) setSelectedVariantId(variants[0].id);
+    } else if (variantMode === 'multi-attr') {
+      if (Object.keys(selectedAttrs).length === 0) {
+        setSelectedAttrs(variants[0]?.attributes || {});
+      }
+    }
+  }, [product, variantMode, selectedVariantId, selectedAttrs]);
+
+  const variant = useMemo(() => {
+    const variants = product?.variants || [];
+    if (variants.length === 0) return null;
+    if (variantMode === 'direct' || variantMode === 'single') {
+      return variants.find((v: any) => v.id === selectedVariantId) || variants[0];
+    }
+    // multi-attr mode
+    if (Object.keys(selectedAttrs).length === 0) return variants[0];
+    return variants.find((v: any) =>
+      Object.entries(selectedAttrs).every(([k, val]) => v.attributes?.[k] === val)
+    ) || variants[0];
+  }, [product, variantMode, selectedVariantId, selectedAttrs]);
+
+  if (isLoading) return <PageLoader />;
   if (!product) return (
     <div className="container py-20 text-center">
       <div className="text-6xl mb-4">😕</div>
@@ -86,8 +126,7 @@ export default function ProductDetailPage() {
     </div>
   );
 
-  const variant = product.variants?.[selectedVariantIdx];
-  const price = Number(variant?.price || product.basePrice);
+  const price = Number(product?.basePrice || 0) + Number(variant?.price || 0);
   const stock = variant?.inventory?.quantity ?? 0;
   const reviews = reviewsData?.data?.data || [];
 
@@ -117,6 +156,15 @@ export default function ProductDetailPage() {
 
   return (
     <div className="container py-10 animate-fade-in">
+      {/* Back navigation */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8 group"
+      >
+        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+        <span className="text-sm font-medium">Back</span>
+      </button>
+
       <AnimatePresence>
         {showLightbox && <ZoomableLightbox url={zoomUrl} onClose={() => setShowLightbox(false)} />}
       </AnimatePresence>
@@ -189,30 +237,82 @@ export default function ProductDetailPage() {
           <div className="text-3xl font-bold text-white mb-6">{formatPrice(price)}</div>
 
           {/* Variants */}
-          {product.variants?.length > 1 && (
-            <div className="mb-6">
-              {Object.keys(product.variants[0]?.attributes || {}).map(attrKey => {
-                const uniqueVals = [...new Set(product.variants.map((v: any) => v.attributes[attrKey]))];
-                return (
-                  <div key={attrKey} className="mb-3">
-                    <p className="text-sm font-medium text-slate-300 mb-2 capitalize">{attrKey}:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {uniqueVals.map(val => {
-                        const idx = product.variants.findIndex((v: any) => v.attributes[attrKey] === val);
-                        const isSelected = selectedVariantIdx === idx;
-                        return (
-                          <button key={String(val)} onClick={() => { setSelectedVariantIdx(idx); setQuantity(1); }}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${isSelected ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>
-                            {String(val)}
-                          </button>
-                        );
-                      })}
-                    </div>
+          {(product?.variants?.length || 0) > 1 && (() => {
+            const variants: any[] = product.variants;
+
+            // --- DIRECT MODE: inconsistent attributes → show each variant as a chip (Flipkart style) ---
+            if (variantMode === 'direct') {
+              return (
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-white mb-2">Select Variant</p>
+                  <div className="flex flex-wrap gap-2">
+                    {variants.map((v: any) => {
+                      const isSelected = selectedVariantId === v.id;
+                      const attrStr = Object.entries(v.attributes || {})
+                        .map(([k, val]) => `${k}: ${val}`).join(' · ');
+                      const extraPrice = Number(v.price || 0);
+                      const totalPrice = Number(product.basePrice || 0) + extraPrice;
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={() => { setSelectedVariantId(v.id); setQuantity(1); }}
+                          className={`flex flex-col items-start px-4 py-3 rounded-xl text-sm border transition-all text-left ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-500/15 text-white shadow-lg shadow-indigo-500/20'
+                              : 'border-white/10 text-slate-300 bg-white/5 hover:bg-white/10'
+                          }`}
+                        >
+                          <span className="font-bold">{attrStr || v.sku}</span>
+                          <span className={`text-xs mt-0.5 ${isSelected ? 'text-indigo-300' : 'text-slate-500'}`}>
+                            {formatPrice(totalPrice)}{extraPrice > 0 ? ` (+${formatPrice(extraPrice)})` : ''}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            }
+
+            // --- MULTI-ATTR MODE: all variants have same attribute keys → independent selectors ---
+            const allAttrKeys = [...new Set(variants.flatMap((v: any) => Object.keys(v.attributes || {})))];
+            return (
+              <div className="mb-6">
+                {allAttrKeys.map((attrKey: string) => {
+                  const uniqueVals = [...new Set(variants.map((v: any) => v.attributes?.[attrKey]).filter(Boolean))];
+                  return (
+                    <div key={attrKey} className="mb-4">
+                      <p className="text-sm font-bold text-white mb-2 capitalize">{attrKey}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {uniqueVals.map((val: any) => {
+                          const isSelected = selectedAttrs[attrKey] === val;
+                          const wouldBeAvailable = variants.some((v: any) => {
+                            const hypothetical = { ...selectedAttrs, [attrKey]: val };
+                            return Object.entries(hypothetical).every(([k, vVal]) => v.attributes?.[k] === vVal);
+                          });
+                          return (
+                            <button
+                              key={String(val)}
+                              onClick={() => { setSelectedAttrs(prev => ({ ...prev, [attrKey]: String(val) })); setQuantity(1); }}
+                              className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+                                isSelected
+                                  ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
+                                  : wouldBeAvailable
+                                    ? 'border-white/10 text-slate-300 bg-white/5 hover:bg-white/10'
+                                    : 'border-white/5 text-slate-600 bg-transparent opacity-50'
+                              }`}
+                            >
+                              {String(val)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Stock status */}
           <div className="flex items-center gap-2 mb-6">

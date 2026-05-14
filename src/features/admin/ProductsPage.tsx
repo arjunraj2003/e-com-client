@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { productApi } from '@/services/productService';
 import { formatPrice } from '@/utils/helpers';
-import { Plus, Pencil, Trash2, Upload, X, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, X, Package, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminProductsPage() {
@@ -61,17 +61,25 @@ export default function AdminProductsPage() {
     },
   });
 
-  const [newVar, setNewVar] = useState({ sku: '', quantity: 0, attributes: '{}', price: '' });
+  const COMMON_ATTRS = ['Color', 'Size', 'Material', 'Style', 'Weight', 'Storage Capacity', 'Custom...'];
+  const [newVar, setNewVar] = useState({ sku: '', quantity: 0, price: '' });
+  const [attrBuilder, setAttrBuilder] = useState<{key: string, value: string, isCustom: boolean}>({ key: 'Color', value: '', isCustom: false });
+  const [pendingAttrs, setPendingAttrs] = useState<Record<string, string>>({});
 
   return (
     <div className="container py-10 animate-fade-in">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-white">Product Inventory</h1>
-          <p className="text-slate-400 text-sm">Manage your catalog, variants, and media</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <Link to="/admin" className="w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-display font-bold text-white">Product Inventory</h1>
+            <p className="text-slate-400 text-sm">Manage your catalog, variants, and media</p>
+          </div>
         </div>
         <button onClick={() => { setEditId(null); setForm({ name: '', description: '', basePrice: '', brand: '', categoryId: '', isActive: true, isFeatured: false }); setShowForm(true); }}
-          className="btn btn-primary text-sm py-2"><Plus size={16} /> New Product</button>
+          className="btn btn-primary text-sm py-2 w-full sm:w-auto"><Plus size={16} /> New Product</button>
       </div>
 
       {showForm && (
@@ -268,24 +276,83 @@ export default function AdminProductsPage() {
             <button onClick={() => setSelectedProduct(null)} className="text-slate-400 hover:text-white"><X size={18} /></button>
           </div>
           
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-             <input placeholder="SKU (e.g. UL-BLK-128)" className="input text-xs" value={newVar.sku} onChange={e => setNewVar(v=>({...v, sku: e.target.value}))} />
-             <input type="number" placeholder="Stock Qty" className="input text-xs" value={newVar.quantity} onChange={e => setNewVar(v=>({...v, quantity: parseInt(e.target.value) || 0}))} />
-             <input type="number" placeholder="Price (optional)" className="input text-xs" value={newVar.price} onChange={e => setNewVar(v=>({...v, price: e.target.value}))} />
-             <input placeholder="Attributes (e.g. color: Red)" className="input text-xs" value={newVar.attributes} onChange={e => setNewVar(v=>({...v, attributes: e.target.value}))} />
-             <button onClick={() => {
-                try {
-                  const attrs = JSON.parse(newVar.attributes.replace(/(\w+):/g, '"$1":').replace(/:(\w+)/g, ':"$1"'));
-                  const variantData = { 
-                    ...newVar, 
-                    price: newVar.price ? Number(newVar.price) : undefined, 
-                    attributes: attrs 
-                  };
-                  addVariantMutation.mutate({ id: selectedProduct.id, data: variantData });
-                } catch { toast.error('Invalid attributes format. Use key:Value'); }
-             }} 
-             className="btn btn-primary text-xs h-10"><Plus size={14} /> Add Variant</button>
-          </div>
+        <div className="flex flex-col gap-5 mb-8 p-5 bg-white/[0.02] rounded-xl border border-white/5">
+           <h4 className="text-sm font-bold text-white mb-2">1. Variant Details</h4>
+           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+             <div><label className="label text-[10px] mb-1">SKU *</label><input placeholder="e.g. UL-BLK-128" className="input text-xs" value={newVar.sku} onChange={e => setNewVar(v=>({...v, sku: e.target.value}))} /></div>
+             <div><label className="label text-[10px] mb-1">Stock Quantity</label><input type="number" placeholder="0" className="input text-xs" value={newVar.quantity} onChange={e => setNewVar(v=>({...v, quantity: parseInt(e.target.value) || 0}))} /></div>
+             <div><label className="label text-[10px] mb-1">Extra Price (optional, ₹)</label><input type="number" placeholder="0" className="input text-xs" value={newVar.price} onChange={e => setNewVar(v=>({...v, price: e.target.value}))} /></div>
+           </div>
+           
+           <div className="mt-4 pt-4 border-t border-white/5">
+              <h4 className="text-sm font-bold text-white mb-4">2. Variant Properties</h4>
+              
+              {Object.entries(pendingAttrs).length > 0 && (
+                 <div className="flex flex-wrap gap-2 mb-4">
+                    {Object.entries(pendingAttrs).map(([k,v]) => (
+                       <div key={k} className="px-3 py-1.5 bg-indigo-500/20 text-indigo-300 font-medium text-[10px] rounded-lg border border-indigo-500/30 flex items-center gap-2">
+                          <span className="opacity-60">{k}:</span> {v}
+                          <button onClick={() => {
+                             const newAttrs = {...pendingAttrs};
+                             delete newAttrs[k];
+                             setPendingAttrs(newAttrs);
+                          }} className="hover:text-white transition-colors"><X size={12} /></button>
+                       </div>
+                    ))}
+                 </div>
+              )}
+
+              <div className="flex flex-wrap items-end gap-3">
+                 <div className="flex-1 min-w-[120px]">
+                    <label className="label text-[10px] mb-1">Option Type</label>
+                    <select 
+                      className="input text-xs" 
+                      value={attrBuilder.isCustom ? 'Custom...' : attrBuilder.key} 
+                      onChange={e => {
+                         if (e.target.value === 'Custom...') setAttrBuilder(p => ({ ...p, isCustom: true, key: '' }));
+                         else setAttrBuilder(p => ({ ...p, isCustom: false, key: e.target.value }));
+                      }}
+                    >
+                       {COMMON_ATTRS.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                 </div>
+                 {attrBuilder.isCustom && (
+                    <div className="flex-1 min-w-[120px]">
+                       <label className="label text-[10px] mb-1">Custom Option Name</label>
+                       <input placeholder="e.g. Finish" className="input text-xs" value={attrBuilder.key} onChange={e => setAttrBuilder(p => ({...p, key: e.target.value}))} />
+                    </div>
+                 )}
+                 <div className="flex-1 min-w-[120px]">
+                    <label className="label text-[10px] mb-1">Value</label>
+                    <input placeholder="e.g. Red, XL" className="input text-xs" value={attrBuilder.value} onChange={e => setAttrBuilder(p => ({...p, value: e.target.value}))} />
+                 </div>
+                 <button onClick={() => {
+                    if (!attrBuilder.key || !attrBuilder.value) return toast.error('Both option and value are required');
+                    setPendingAttrs(p => ({ ...p, [attrBuilder.key]: attrBuilder.value }));
+                    setAttrBuilder(p => ({ ...p, value: '' }));
+                 }} className="btn btn-outline text-xs h-10 px-4">Add Option</button>
+              </div>
+           </div>
+
+           <button onClick={() => {
+              if (!newVar.sku) return toast.error('SKU is required');
+              if (Object.keys(pendingAttrs).length === 0) return toast.error('Add at least one property to your variant (e.g. Color)');
+              
+              const variantData = { 
+                sku: newVar.sku,
+                quantity: newVar.quantity,
+                price: newVar.price ? Number(newVar.price) : undefined, 
+                attributes: pendingAttrs
+              };
+              addVariantMutation.mutate({ id: selectedProduct.id, data: variantData }, {
+                 onSuccess: () => {
+                    setNewVar({ sku: '', quantity: 0, price: '' });
+                    setPendingAttrs({});
+                 }
+              });
+           }} 
+           className="btn btn-primary text-xs h-12 w-full mt-2 shadow-lg shadow-indigo-500/20"><Package size={16} /> Save This Variant</button>
+        </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {selectedProduct.variants?.map((v: any) => (

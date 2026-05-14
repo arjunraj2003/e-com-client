@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { formatPrice, formatDate } from '@/utils/helpers';
-import { Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Trash2, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminCouponsPage() {
@@ -15,9 +16,29 @@ export default function AdminCouponsPage() {
 
   const saveMutation = useMutation({
     mutationFn: (d: any) => api.post('/coupons', d),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'coupons'] }); toast.success('Coupon created'); setShowForm(false); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'coupons'] });
+      toast.success('Coupon created');
+      setShowForm(false);
+      setForm({ code: '', discountType: 'percentage', discountValue: '', minOrderAmount: '', maxDiscountAmount: '', usageLimit: '', expiresAt: '' });
+    },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
+
+  const handleCreate = () => {
+    if (!form.code.trim()) return toast.error('Coupon code is required');
+    if (!form.discountValue) return toast.error('Discount value is required');
+    const payload: Record<string, any> = {
+      code: form.code.trim().toUpperCase(),
+      discountType: form.discountType,
+      discountValue: Number(form.discountValue),
+    };
+    if (form.minOrderAmount !== '') payload.minOrderAmount = Number(form.minOrderAmount);
+    if (form.maxDiscountAmount !== '') payload.maxDiscountAmount = Number(form.maxDiscountAmount);
+    if (form.usageLimit !== '') payload.usageLimit = Number(form.usageLimit);
+    if (form.expiresAt !== '') payload.expiresAt = new Date(form.expiresAt).toISOString();
+    saveMutation.mutate(payload);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/coupons/${id}`),
@@ -31,9 +52,14 @@ export default function AdminCouponsPage() {
 
   return (
     <div className="container py-10 animate-fade-in">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-display font-bold text-white">Coupons</h1>
-        <button onClick={() => setShowForm(true)} className="btn btn-primary text-sm py-2"><Plus size={16} /> Create Coupon</button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <Link to="/admin" className="w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+            <ArrowLeft size={20} />
+          </Link>
+          <h1 className="text-2xl font-display font-bold text-white">Coupons</h1>
+        </div>
+        <button onClick={() => setShowForm(true)} className="btn btn-primary text-sm py-2 w-full sm:w-auto"><Plus size={16} /> Create Coupon</button>
       </div>
 
       {showForm && (
@@ -55,7 +81,7 @@ export default function AdminCouponsPage() {
             <div><label className="block text-xs text-slate-300 mb-1">Expires At</label><input type="datetime-local" value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))} className="input text-sm" /></div>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending} className="btn btn-primary text-sm py-2">Create</button>
+            <button onClick={handleCreate} disabled={saveMutation.isPending} className="btn btn-primary text-sm py-2">Create</button>
             <button onClick={() => setShowForm(false)} className="btn btn-outline text-sm py-2">Cancel</button>
           </div>
         </div>

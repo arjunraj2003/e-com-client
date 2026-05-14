@@ -32,12 +32,12 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="container py-10 animate-fade-in">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-display font-bold text-white">Admin Dashboard</h1>
           <p className="text-slate-400 text-sm mt-1">Overview of your store performance</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {NAV.map((n) => <Link key={n.href} to={n.href} className="btn btn-outline text-sm py-2">{n.emoji} {n.label}</Link>)}
         </div>
       </div>

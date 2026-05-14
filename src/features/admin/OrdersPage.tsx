@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, shipmentApi } from '@/services';
 import { formatPrice, formatDate } from '@/utils/helpers';
-import { Truck, X, Search, AlertCircle } from 'lucide-react';
+import { Truck, X, Search, AlertCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'return_requested', 'returned'];
@@ -45,9 +46,14 @@ export default function AdminOrdersPage() {
   return (
     <div className="container py-10 animate-fade-in relative">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-white">Order Management</h1>
-          <p className="text-slate-400 text-sm">{total} total orders found</p>
+        <div className="flex items-center gap-4">
+          <Link to="/admin" className="w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 shrink-0 transition-all">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-display font-bold text-white">Order Management</h1>
+            <p className="text-slate-400 text-sm">{total} total orders found</p>
+          </div>
         </div>
         <div className="relative max-w-sm w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
