@@ -28,8 +28,8 @@ export default function RegisterPage() {
   const onSubmit = async (data: FormData) => {
     try {
       await authApi.register({ firstName: data.firstName, lastName: data.lastName, email: data.email, password: data.password });
-      toast.success('Account created! Check your email for verification OTP.');
-      navigate(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
+      toast.success('Account created! You can now log in.');
+      navigate(`/auth/login`);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Registration failed');
     }
