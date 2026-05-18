@@ -131,7 +131,7 @@ export default function CartPage() {
               </div>
             </div>
             <button
-              onClick={() => { if (!isAuthenticated) { navigate('/auth/login'); return; } navigate('/checkout'); }}
+              onClick={() => navigate('/checkout')}
               className="btn btn-primary w-full py-3 text-base">
               <ShoppingBag size={18} /> Proceed to Checkout <ArrowRight size={16} />
             </button>

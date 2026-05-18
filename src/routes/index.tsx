@@ -22,6 +22,7 @@ const Orders = lazy(() => import('@/features/orders/OrdersPage'));
 const OrderDetail = lazy(() => import('@/features/orders/OrderDetailPage'));
 const Profile = lazy(() => import('@/features/profile/ProfilePage'));
 const Addresses = lazy(() => import('@/features/profile/AddressesPage'));
+const GoogleCallback = lazy(() => import('@/pages/auth/GoogleCallback'));
 const AdminDashboard = lazy(() => import('@/features/admin/DashboardPage'));
 const AdminProducts = lazy(() => import('@/features/admin/ProductsPage'));
 const AdminOrders = lazy(() => import('@/features/admin/OrdersPage'));
@@ -77,9 +78,10 @@ const router = createBrowserRouter([
       { path: 'auth/forgot-password', element: <GuestRoute><ForgotPassword /></GuestRoute> },
       { path: 'auth/reset-password', element: <ResetPassword /> },
       { path: 'auth/verify-email', element: <VerifyEmail /> },
+      { path: 'auth/oauth-callback', element: <GoogleCallback /> },
       // Protected
       { path: 'wishlist', element: <ProtectedRoute><Wishlist /></ProtectedRoute> },
-      { path: 'checkout', element: <ProtectedRoute><Checkout /></ProtectedRoute> },
+      { path: 'checkout', element: <Checkout /> },
       { path: 'payment/result', element: <ProtectedRoute><PaymentResult /></ProtectedRoute> },
       { path: 'orders', element: <ProtectedRoute><Orders /></ProtectedRoute> },
       { path: 'orders/:id', element: <ProtectedRoute><OrderDetail /></ProtectedRoute> },

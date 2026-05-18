@@ -3,11 +3,14 @@ import { persist } from 'zustand/middleware';
 
 export interface AuthUser {
   id: string;
-  email: string;
+  email?: string;
+  phone?: string;
   firstName: string;
   lastName: string;
   role: 'user' | 'admin';
   avatar?: string;
+  isGuest?: boolean;
+  authProvider?: 'local' | 'google' | 'phone' | 'guest';
 }
 
 interface AuthState {
