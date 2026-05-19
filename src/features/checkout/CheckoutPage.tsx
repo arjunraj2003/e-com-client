@@ -84,7 +84,7 @@ function AuthStep() {
           </div>
         </button>
 
-        <button onClick={() => setMode('PHONE')} className="w-full flex items-center gap-3 p-4 rounded-xl glass hover:bg-white/10 transition-colors border border-white/5">
+        <button onClick={() => setMode('PHONE')} className="hidden w-full items-center gap-3 p-4 rounded-xl glass hover:bg-white/10 transition-colors border border-white/5">
           <div className="w-8 h-8 bg-[#534AB7]/20 text-[#534AB7] rounded-full flex items-center justify-center shrink-0">
             <Phone size={18} />
           </div>
